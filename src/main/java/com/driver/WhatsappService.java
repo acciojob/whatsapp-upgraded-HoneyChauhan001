@@ -3,6 +3,9 @@ package com.driver;
 import org.apache.catalina.authenticator.SavedRequest;
 import org.springframework.stereotype.Service;
 
+import javax.swing.text.html.Option;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 
@@ -89,5 +92,45 @@ public class WhatsappService {
         }
     }
 
+    public int removeUser(User user) throws Exception {
+        //A user belongs to exactly one group
+        //If user is not found in any group, throw "User not found" exception
+        //If user is found in a group and it is the admin, throw "Cannot remove admin" exception
+        //If user is not the admin, remove the user from the group, remove all its messages from all the databases, and update relevant attributes accordingly.
+        //If user is removed successfully, return (the updated number of users in the group + the updated number of messages in group + the updated number of overall messages)
+
+        Optional<Group> groupOpt = whatsappRepository.getUserGroup(user);
+        if(groupOpt.isEmpty()){
+            throw new Exception("User not found");
+        }
+        Group group = groupOpt.get();
+
+        User admin = whatsappRepository.getAdmin(group).get();
+
+        if(admin.equals(user)){
+            throw new Exception("Cannot remove admin");
+        }
+
+        whatsappRepository.removeUserFromGroup(group,user);
+        HashMap<Message,User> senderMap = whatsappRepository.getSenderMap();
+        List<Message> userMessages = new ArrayList<>();
+
+        for(Message message : senderMap.keySet()){
+            if(senderMap.get(message).equals(user)){
+                userMessages.add(message);
+            }
+        }
+
+        for(Message message : userMessages){
+            whatsappRepository.deleteMessage(message,group,user);
+        }
+
+        int ans = 0;
+        ans += whatsappRepository.getusersInGroup(group).size();
+        ans += whatsappRepository.getMessagesInGroup(group).size();
+        ans += whatsappRepository.getMessagesCount();
+        return ans;
+
+    }
 }
 

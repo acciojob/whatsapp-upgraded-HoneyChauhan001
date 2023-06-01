@@ -16,6 +16,7 @@ public class WhatsappRepository {
     private HashMap<String,User> mobileUserMap;
     private HashMap<Integer,Message> messageMap;
     private HashMap<String,Group> groupMap;
+    private HashMap<User,Group> userGroupMap;
     private int customGroupCount;
     private int messageId;
 
@@ -43,6 +44,7 @@ public class WhatsappRepository {
         this.mobileUserMap = new HashMap<>();
         this.messageMap = new HashMap<>();
         this.groupMap = new HashMap<>();
+        this.userGroupMap = new HashMap<>();
         this.customGroupCount = 0;
         this.messageId = 0;
     }
@@ -62,6 +64,9 @@ public class WhatsappRepository {
     public void createGroup(Group group, List<User> users) {
         groupUserMap.put(group,users);
         adminMap.put(group,users.get(0));
+        for(User user : users){
+            userGroupMap.put(user,group);
+        }
     }
 
     public void createMessage(Message message) {
@@ -121,6 +126,45 @@ public class WhatsappRepository {
             return Optional.of(groupMap.get(groupName));
         }
         else return Optional.empty();
+    }
+
+    public Optional<Group> getUserGroup(User user) {
+        if(userGroupMap.containsKey(user)){
+            return Optional.of(userGroupMap.get(user));
+        }
+        return Optional.empty();
+    }
+
+    public void removeUserFromGroup(Group group, User user) {
+        List<User> userList = groupUserMap.get(group);
+        userList.remove(user);
+        groupUserMap.put(group,userList);
+        userGroupMap.remove(user);
+        mobileUserMap.remove(user.getMobile());
+    }
+
+    public HashMap<Message, User> getSenderMap() {
+        return senderMap;
+    }
+
+    public void deleteMessage(Message message,Group group, User user) {
+
+        groupMessageMap.get(group).remove(message);
+        senderMap.remove(message);
+        messageMap.remove(message.getId());
+
+    }
+
+    public List<User> getusersInGroup(Group group) {
+        return groupUserMap.get(group);
+    }
+
+    public List<Message> getMessagesInGroup(Group group) {
+        return groupMessageMap.get(group);
+    }
+
+    public int getMessagesCount() {
+        return messageMap.size();
     }
 }
 
